@@ -14,11 +14,11 @@ def main():
     print(f"Collected {len(posts)} posts")
 
     print("Analyzing with Claude...")
-    trip_ideas, trends = analyze_trips(posts)
-    print(f"Found {len(trip_ideas)} trip ideas, {len(trends)} trends")
+    observations, absent_signals = analyze_trips(posts)
+    print(f"Found {len(observations)} observations, {len(absent_signals)} absent signals")
 
     print("Sending Jove digest...")
-    send_digest(trip_ideas, trends)
+    send_digest(observations, absent_signals)
     print("Done.")
 
 

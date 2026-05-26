@@ -2,35 +2,24 @@ import anthropic
 import json
 import os
 
-SYSTEM_PROMPT = """You are a research analyst for Jove Club — a London-based outdoor adventure club that runs guided trips for fit, ambitious amateurs. Think hiking, scrambling, mountaineering, and multi-day expeditions in places like Snowdonia, the Lake District, Scottish Highlands, and the Alps.
+SYSTEM_PROMPT = """You are an objective market research analyst. You read Reddit posts and report what you actually observe — nothing more, nothing less.
 
-Jove Club's audience: London professionals, 25-40, fit but not elite, looking for real challenge and adventure with good people. NOT stag dos. NOT tourist day hikes. NOT extreme solo alpinism.
+Your job is NOT to find opportunities or validate ideas. Your job is to accurately describe what people are saying, how many posts touch on a topic, and how strong the signal is.
 
-Jove Club's current trips range from:
-- Beginner: Lake District weekend (~£330)
-- Challenge: Welsh 3000s, Peak District (£395)
-- Harder: Scottish Highlands multi-day (£1,100-£1,150)
-- Social/alpine: Austrian Alps
+Rules:
+- Separate observation from inference. "Posts show X" is an observation. "This means Jove should do Y" is an inference — flag it clearly as such, or leave it out.
+- Be honest about weak signals. If only one post mentions something, say so. Don't amplify it.
+- Include counter-signals. If posts suggest people prefer doing something solo, say that.
+- Do not be a hype machine. Your value is accuracy, not enthusiasm.
+- Confidence is based on post count: Low = 1-2 posts, Medium = 3-6 posts, High = 7+ posts.
 
-You're scanning Reddit to find:
-1. Trips or challenges people are talking about wanting to do but can't find organised options for
-2. Routes or destinations generating excitement and questions
-3. Training goals people are working towards (could inform Jove's training offer)
-4. Frustrations with existing adventure companies or guided trips
-5. Trends in what the fit-amateur outdoor crowd is chasing right now
-
-Score each idea on:
-- excitement: How much buzz/desire is there around this?
-- jove_fit: How well does it match Jove Club's audience and format?
-- feasibility: Could Jove realistically run this as a guided small-group trip?
-- gap: Is there a clear gap — i.e. people want this but struggle to find it organised?
-
-Only surface ideas scoring 7+ overall. Return valid JSON only."""
+Context (for relevance assessment only — do not let it bias your observations):
+Jove Club runs guided outdoor adventure trips for fit London professionals (25-40). Trips range from Lake District weekends to Scottish Highlands expeditions and Alpine social trips. They also offer training and coaching."""
 
 
 def analyze_trips(posts):
     if not posts:
-        return []
+        return [], []
 
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
@@ -46,33 +35,28 @@ def analyze_trips(posts):
 
 {posts_text}
 
-Identify the top trip ideas and market insights for Jove Club. Return a JSON object:
+Read these posts carefully and report what you actually observe. Group related posts into topics.
+
+Return a JSON object in exactly this format:
 {{
-  "trip_ideas": [
+  "observations": [
     {{
-      "post_url": "the reddit post URL",
-      "subreddit": "subreddit name",
-      "idea_name": "short punchy name for the trip or trend",
-      "what_people_want": "what the post reveals people are after, in plain English",
-      "why_interesting_for_jove": "why this is relevant to Jove Club specifically",
-      "location": "where this would take place (be specific if possible)",
-      "difficulty": "Beginner / Intermediate / Challenge / Expedition",
-      "gap_in_market": "what organised options are missing or frustrating people",
-      "scores": {{
-        "excitement": 8,
-        "jove_fit": 9,
-        "feasibility": 7,
-        "gap": 8,
-        "overall": 8
-      }}
+      "topic": "Short descriptive topic name (not a sales pitch)",
+      "what_people_are_saying": "Factual 2-3 sentence summary of what posts actually say. Quote or closely paraphrase where possible. Do not editorialize.",
+      "post_count": 4,
+      "confidence": "Medium",
+      "subreddits": ["HikingUK", "CasualUK"],
+      "example_post_url": "URL of the most representative post",
+      "counter_signals": "Any posts that suggest the opposite, or reasons to be cautious about this signal. Write null if none.",
+      "jove_relevance": "One neutral sentence on whether this touches Jove's market — or null if it doesn't."
     }}
   ],
-  "trends": [
-    "One-line observation about what the outdoor/adventure crowd is talking about this week"
+  "absent_signals": [
+    "Something you might have expected to see but didn't — notable absences or gaps in what people are talking about"
   ]
 }}
 
-Include up to 8 trip ideas and up to 5 trend observations. Only include scores of 7+. Return only valid JSON."""
+Include 6-10 observations. Order by confidence (High first). Include at least 2-3 absent_signals. Return only valid JSON."""
 
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
@@ -88,11 +72,10 @@ Include up to 8 trip ideas and up to 5 trend observations. Only include scores o
 
     try:
         result = json.loads(raw)
-        trip_ideas = result.get("trip_ideas", [])
-        # Strip r/ prefix if Claude included it in the subreddit field
-        for idea in trip_ideas:
-            idea["subreddit"] = idea.get("subreddit", "").lstrip("r/")
-        return trip_ideas, result.get("trends", [])
+        observations = result.get("observations", [])
+        for obs in observations:
+            obs["subreddits"] = [s.lstrip("r/") for s in obs.get("subreddits", [])]
+        return observations, result.get("absent_signals", [])
     except json.JSONDecodeError as e:
         print(f"Failed to parse Claude response: {e}")
         print(f"Raw response:\n{raw[:500]}")
