@@ -1,0 +1,28 @@
+name: Jove Trip Intelligence
+
+on:
+  schedule:
+    - cron: "0 7 * * 6"  # Every Saturday at 7am UTC (8am BST / 7am GMT)
+  workflow_dispatch:       # Manual trigger from Actions tab
+
+jobs:
+  run-digest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Jove digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DIGEST_EMAIL: ${{ secrets.DIGEST_EMAIL }}
+        run: python main_jove.py
