@@ -28,7 +28,7 @@ def analyze_opportunities(posts):
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     posts_text = "\n\n---\n\n".join([
-        f"Post #{i + 1} [r/{p['subreddit']}] Upvotes: {p['score']} | Comments: {p['num_comments']}\n"
+        f"Post #{i + 1} [r/{p['subreddit']}]\n"
         f"Title: {p['title']}\n"
         f"Body: {p['body']}\n"
         f"URL: {p['url']}"
