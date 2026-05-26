@@ -79,7 +79,10 @@ Include up to 10 opportunities, ordered best first. Only include scores of 7+. R
 
     try:
         result = json.loads(raw)
-        return result.get("opportunities", [])
+        opportunities = result.get("opportunities", [])
+        for opp in opportunities:
+            opp["subreddit"] = opp.get("subreddit", "").lstrip("r/")
+        return opportunities
     except json.JSONDecodeError as e:
         print(f"Failed to parse Claude response: {e}")
         print(f"Raw response:\n{raw[:500]}")

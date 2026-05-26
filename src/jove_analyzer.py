@@ -88,7 +88,11 @@ Include up to 8 trip ideas and up to 5 trend observations. Only include scores o
 
     try:
         result = json.loads(raw)
-        return result.get("trip_ideas", []), result.get("trends", [])
+        trip_ideas = result.get("trip_ideas", [])
+        # Strip r/ prefix if Claude included it in the subreddit field
+        for idea in trip_ideas:
+            idea["subreddit"] = idea.get("subreddit", "").lstrip("r/")
+        return trip_ideas, result.get("trends", [])
     except json.JSONDecodeError as e:
         print(f"Failed to parse Claude response: {e}")
         print(f"Raw response:\n{raw[:500]}")
