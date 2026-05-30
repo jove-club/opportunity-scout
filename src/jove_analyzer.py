@@ -24,7 +24,7 @@ def analyze_trips(posts):
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     posts_text = "\n\n---\n\n".join([
-        f"Post #{i + 1} [r/{p['subreddit']}]\n"
+        f"Post #{i + 1} [{p.get('subreddit') and f\"r/{p['subreddit']}\" or p.get('source', 'unknown')}]\n"
         f"Title: {p['title']}\n"
         f"Body: {p['body']}\n"
         f"URL: {p['url']}"
